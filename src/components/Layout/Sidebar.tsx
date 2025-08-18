@@ -4,10 +4,9 @@ import {
   LayoutDashboard, 
   FolderOpen, 
   Monitor, 
-  FileCode, 
-  Tag, 
-  BarChart3, 
-  Settings,
+  FileCode,
+  Tag,
+  BarChart3,
   PlayCircle
 } from 'lucide-react';
 

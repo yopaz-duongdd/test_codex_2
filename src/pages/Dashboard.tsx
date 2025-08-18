@@ -1,5 +1,5 @@
 import React from 'react';
-import { BarChart3, FolderOpen, Monitor, FileCode, Tag, CheckCircle, XCircle, Clock } from 'lucide-react';
+import { BarChart3, FolderOpen, Monitor, FileCode, CheckCircle, XCircle, Clock } from 'lucide-react';
 import { TestAutomationAPI } from '../utils/api';
 
 const Dashboard: React.FC = () => {

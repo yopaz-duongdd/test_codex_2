@@ -61,12 +61,31 @@ async function initDb() {
       consoleErrors TEXT,
       steps TEXT,
       createdAt TEXT
+    );
+    CREATE TABLE IF NOT EXISTS apiKeys (
+      id INTEGER PRIMARY KEY,
+      key TEXT
     );`);
 }
 
 function generateId() {
   return Date.now().toString(36) + Math.random().toString(36).substr(2);
 }
+
+// Authentication
+app.post('/api/login', async (req, res) => {
+  const { key } = req.body;
+  const isValid = key === 'test-automation-key-2025';
+  if (isValid) {
+    await db.run('INSERT OR REPLACE INTO apiKeys (id, key) VALUES (1, ?)', key);
+  }
+  res.json({ key, isValid });
+});
+
+app.get('/api/api-key', async (_req, res) => {
+  const row = await db.get('SELECT key FROM apiKeys LIMIT 1');
+  res.json({ key: row?.key || '' });
+});
 
 // Projects
 app.get('/api/projects', async (_req, res) => {
@@ -304,6 +323,7 @@ app.delete('/api/test-results/:id', async (req, res) => {
 
 // Initialize sample data
 app.post('/api/init', async (_req, res) => {
+  await db.run('INSERT OR IGNORE INTO apiKeys (id, key) VALUES (1, ?)', 'test-automation-key-2025');
   const count = await db.get('SELECT COUNT(*) as c FROM projects');
   if (count.c > 0) return res.json({ success: true });
 

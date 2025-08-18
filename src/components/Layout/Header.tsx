@@ -8,8 +8,10 @@ interface HeaderProps {
 }
 
 const Header: React.FC<HeaderProps> = ({ onToggleSidebar }) => {
-  const { logout, apiKey } = useAuth();
+  const { logout } = useAuth();
   const [copied, setCopied] = React.useState(false);
+
+  const apiKey = TestAutomationAPI.getApiKey();
 
   const copyApiKey = async () => {
     await navigator.clipboard.writeText(apiKey);

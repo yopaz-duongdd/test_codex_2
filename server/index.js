@@ -75,16 +75,28 @@ function generateId() {
 // Authentication
 app.post('/api/login', async (req, res) => {
   const { key } = req.body;
-  const isValid = key === 'test-automation-key-2025';
-  if (isValid) {
-    await db.run('INSERT OR REPLACE INTO apiKeys (id, key) VALUES (1, ?)', key);
-  }
+  
+  // Kiểm tra API key từ database
+  const existingKey = await db.get('SELECT key FROM apiKeys WHERE key = ?', key);
+  const isValid = !!existingKey;
+  
   res.json({ key, isValid });
 });
 
 app.get('/api/api-key', async (_req, res) => {
   const row = await db.get('SELECT key FROM apiKeys LIMIT 1');
   res.json({ key: row?.key || '' });
+});
+
+// Endpoint để thêm/cập nhật API key (dành cho admin)
+app.post('/api/api-key', async (req, res) => {
+  const { key } = req.body;
+  if (!key) {
+    return res.status(400).json({ error: 'API key is required' });
+  }
+  
+  await db.run('INSERT OR REPLACE INTO apiKeys (id, key) VALUES (1, ?)', key);
+  res.json({ success: true, key });
 });
 
 // Projects

@@ -1,1 +1,1 @@
-Hãy sửa lại các mock api ở code hiện tại để api thao tác với code frontend là api thật và sử dụng sqlite làm database
+Khi tiến hành login chưa gọi qua api và api key cũng chưa lưu vào db. APi key ở trên menu cũng chưa được lấy từ db, hãy sửa lại.

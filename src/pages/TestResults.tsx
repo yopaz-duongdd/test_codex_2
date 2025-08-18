@@ -28,10 +28,6 @@ const TestResults: React.FC = () => {
     const script = getScript(result.testScriptId);
     if (!script) return false;
 
-    const project = getProject(script.projectId);
-    const screen = getScreen(script.screenId);
-    const tag = getTag(script.tagId);
-
     const matchesSearch = script.name.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesProject = !filterProject || script.projectId === filterProject;
     const matchesScreen = !filterScreen || script.screenId === filterScreen;
@@ -309,7 +305,7 @@ const TestResults: React.FC = () => {
             <div>
               <h3 className="text-lg font-semibold text-slate-900 mb-3">Test Steps</h3>
               <div className="space-y-4">
-                {viewingResult.steps.map((step, index) => (
+                {viewingResult.steps.map((step) => (
                   <div key={step.id} className="border border-slate-200 p-4 rounded-lg">
                     <div className="flex items-center justify-between mb-2">
                       <h4 className="font-medium text-slate-900">Step {step.stepNumber}</h4>

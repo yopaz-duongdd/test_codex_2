@@ -16,12 +16,11 @@ function request<T>(method: string, path: string, body?: unknown): T {
 
 export class TestAutomationAPI {
   static validateApiKey(key: string): ApiKeyData {
-    const API_KEY = 'test-automation-key-2025';
-    return { key: API_KEY, isValid: key === API_KEY };
+    return request<ApiKeyData>('POST', '/login', { key });
   }
 
   static getApiKey(): string {
-    return 'test-automation-key-2025';
+    return request<{ key: string }>('GET', '/api-key').key;
   }
 
   // Projects

@@ -20,7 +20,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const validation = TestAutomationAPI.validateApiKey(savedKey);
       if (validation.isValid) {
         setIsAuthenticated(true);
-        setApiKey(savedKey);
+        setApiKey(validation.key);
       }
     }
   }, []);
@@ -29,8 +29,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const validation = TestAutomationAPI.validateApiKey(key);
     if (validation.isValid) {
       setIsAuthenticated(true);
-      setApiKey(key);
-      localStorage.setItem('test-automation-auth-key', key);
+      setApiKey(validation.key);
+      localStorage.setItem('test-automation-auth-key', validation.key);
       return true;
     }
     return false;

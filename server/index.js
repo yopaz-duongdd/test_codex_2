@@ -61,12 +61,43 @@ async function initDb() {
       consoleErrors TEXT,
       steps TEXT,
       createdAt TEXT
+    );
+    CREATE TABLE IF NOT EXISTS apiKeys (
+      id INTEGER PRIMARY KEY,
+      key TEXT
     );`);
 }
 
 function generateId() {
   return Date.now().toString(36) + Math.random().toString(36).substr(2);
 }
+
+// Authentication
+app.post('/api/login', async (req, res) => {
+  const { key } = req.body;
+  
+  // Kiểm tra API key từ database
+  const existingKey = await db.get('SELECT key FROM apiKeys WHERE key = ?', key);
+  const isValid = !!existingKey;
+  
+  res.json({ key, isValid });
+});
+
+app.get('/api/api-key', async (_req, res) => {
+  const row = await db.get('SELECT key FROM apiKeys LIMIT 1');
+  res.json({ key: row?.key || '' });
+});
+
+// Endpoint để thêm/cập nhật API key (dành cho admin)
+app.post('/api/api-key', async (req, res) => {
+  const { key } = req.body;
+  if (!key) {
+    return res.status(400).json({ error: 'API key is required' });
+  }
+  
+  await db.run('INSERT OR REPLACE INTO apiKeys (id, key) VALUES (1, ?)', key);
+  res.json({ success: true, key });
+});
 
 // Projects
 app.get('/api/projects', async (_req, res) => {
@@ -304,6 +335,7 @@ app.delete('/api/test-results/:id', async (req, res) => {
 
 // Initialize sample data
 app.post('/api/init', async (_req, res) => {
+  await db.run('INSERT OR IGNORE INTO apiKeys (id, key) VALUES (1, ?)', 'test-automation-key-2025');
   const count = await db.get('SELECT COUNT(*) as c FROM projects');
   if (count.c > 0) return res.json({ success: true });
 

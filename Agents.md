@@ -1,0 +1,1 @@
+Hãy sửa lại các mock api ở code hiện tại để api thao tác với code frontend là api thật và sử dụng sqlite làm database

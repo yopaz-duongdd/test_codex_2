@@ -1,0 +1,53 @@
+{
+  "name": "chrome-recorder-manager",
+  "version": "1.0.0",
+  "description": "Hệ thống quản lý và thực thi kịch bản Chrome Recorder để tự động test sản phẩm",
+  "main": "src/main/main.js",
+  "author": "Your Name",
+  "license": "MIT",
+  "homepage": "./",
+  "scripts": {
+    "start": "electron .",
+    "dev": "concurrently \"npm run start-renderer\" \"wait-on http://localhost:3000 && electron .\"",
+    "start-renderer": "cd src/renderer && npm start",
+    "build": "npm run build-renderer && electron-builder",
+    "build-renderer": "cd src/renderer && npm run build",
+    "dist": "electron-builder",
+    "pack": "electron-builder --dir",
+    "postinstall": "electron-builder install-app-deps"
+  },
+  "build": {
+    "appId": "com.company.chrome-recorder-manager",
+    "productName": "Chrome Recorder Manager",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "src/main/**/*",
+      "src/renderer/build/**/*",
+      "node_modules/**/*"
+    ],
+    "mac": {
+      "category": "public.app-category.developer-tools",
+      "target": "dmg"
+    },
+    "win": {
+      "target": "nsis"
+    },
+    "linux": {
+      "target": "AppImage"
+    }
+  },
+  "devDependencies": {
+    "concurrently": "^7.6.0",
+    "electron": "^22.0.0",
+    "electron-builder": "^23.6.0",
+    "wait-on": "^7.0.1"
+  },
+  "dependencies": {
+    "axios": "^1.3.0",
+    "puppeteer": "^19.4.0",
+    "electron-store": "^8.1.0",
+    "electron-log": "^4.4.8"
+  }
+}

@@ -63,19 +63,17 @@ const TestExecution = ({ projects, screens, scripts, tags, onRefresh }) => {
 
     // Filter by project
     if (filters.projectId) {
-      filtered = filtered.filter(script => script.projectId === parseInt(filters.projectId));
+      filtered = filtered.filter(script => script.projectId === filters.projectId);
     }
 
     // Filter by screen
     if (filters.screenId) {
-      filtered = filtered.filter(script => script.screenId === parseInt(filters.screenId));
+      filtered = filtered.filter(script => script.screenId === filters.screenId);
     }
 
     // Filter by tag
     if (filters.tag) {
-      filtered = filtered.filter(script => 
-        script.tags && script.tags.includes(filters.tag)
-      );
+      filtered = filtered.filter(script => script.tagId === filters.tag);
     }
 
     // Filter by search text
@@ -111,7 +109,8 @@ const TestExecution = ({ projects, screens, scripts, tags, onRefresh }) => {
       await window.electronAPI.testExecution.startTest({
         id: script.id,
         name: script.name,
-        filePath: script.filePath,
+        fileName: script.fileName,
+        fileContent: script.fileContent,
         runAll: false
       });
 
@@ -153,7 +152,8 @@ const TestExecution = ({ projects, screens, scripts, tags, onRefresh }) => {
         scripts: filteredScripts.map(script => ({
           id: script.id,
           name: script.name,
-          filePath: script.filePath
+          fileName: script.fileName,
+          fileContent: script.fileContent
         }))
       });
 
@@ -301,7 +301,7 @@ const TestExecution = ({ projects, screens, scripts, tags, onRefresh }) => {
             >
               <option value="">Tất cả màn hình</option>
               {screens
-                .filter(screen => !filters.projectId || screen.projectId === parseInt(filters.projectId))
+                .filter(screen => !filters.projectId || screen.projectId === filters.projectId)
                 .map(screen => (
                   <option key={screen.id} value={screen.id}>
                     {screen.name}
@@ -323,11 +323,14 @@ const TestExecution = ({ projects, screens, scripts, tags, onRefresh }) => {
               className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             >
               <option value="">Tất cả tag</option>
-              {tags.map(tag => (
-                <option key={tag.id} value={tag.name}>
-                  {tag.name}
-                </option>
-              ))}
+              {tags
+                .filter(tag => !filters.projectId || tag.projectId === filters.projectId)
+                .map(tag => (
+                  <option key={tag.id} value={tag.id}>
+                    {tag.name}
+                  </option>
+                ))
+              }
             </select>
           </div>
 
@@ -404,17 +407,12 @@ const TestExecution = ({ projects, screens, scripts, tags, onRefresh }) => {
                       </p>
                     )}
 
-                    {script.tags && script.tags.length > 0 && (
+                    {script.tagId && (
                       <div className="flex flex-wrap gap-2 mt-3">
-                        {script.tags.map((tag, index) => (
-                          <span
-                            key={index}
-                            className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200"
-                          >
-                            <Tag className="w-3 h-3 mr-1" />
-                            {tag}
-                          </span>
-                        ))}
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200">
+                          <Tag className="w-3 h-3 mr-1" />
+                          {tags.find(t => t.id === script.tagId)?.name || 'Unknown'}
+                        </span>
                       </div>
                     )}
                   </div>
@@ -450,11 +448,16 @@ const TestExecution = ({ projects, screens, scripts, tags, onRefresh }) => {
                 {/* Script file info */}
                 <div className="mt-4 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
                   <div className="text-xs text-gray-600 dark:text-gray-400">
-                    <span className="font-medium">File:</span> {script.filePath || 'N/A'}
+                    <span className="font-medium">File:</span> {script.fileName || 'N/A'}
                   </div>
                   {script.createdAt && (
                     <div className="text-xs text-gray-600 dark:text-gray-400 mt-1">
                       <span className="font-medium">Tạo lúc:</span> {new Date(script.createdAt).toLocaleString('vi-VN')}
+                    </div>
+                  )}
+                  {script.version && (
+                    <div className="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                      <span className="font-medium">Version:</span> {script.version}
                     </div>
                   )}
                 </div>

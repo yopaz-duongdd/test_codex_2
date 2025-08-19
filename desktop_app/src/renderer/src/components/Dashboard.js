@@ -4,7 +4,7 @@ import Sidebar from './Sidebar';
 import Header from './Header';
 import TestExecution from './TestExecution';
 import TestResults from './TestResults';
-import { apiService } from '../services/apiService';
+import apiService from '../services/api';
 import toast from 'react-hot-toast';
 
 const Dashboard = ({ apiKey, onLogout }) => {
@@ -24,7 +24,6 @@ const Dashboard = ({ apiKey, onLogout }) => {
   const initializeData = async () => {
     try {
       setIsLoading(true);
-      apiService.setApiKey(apiKey);
       
       // Load initial data
       await Promise.all([
@@ -43,8 +42,8 @@ const Dashboard = ({ apiKey, onLogout }) => {
 
   const loadProjects = async () => {
     try {
-      const response = await apiService.getProjects();
-      setProjects(response.data || []);
+      const projects = await apiService.getProjects();
+      setProjects(projects || []);
     } catch (error) {
       console.error('Error loading projects:', error);
       setProjects([]);
@@ -53,8 +52,8 @@ const Dashboard = ({ apiKey, onLogout }) => {
 
   const loadScreens = async () => {
     try {
-      const response = await apiService.getScreens();
-      setScreens(response.data || []);
+      const screens = await apiService.getScreens();
+      setScreens(screens || []);
     } catch (error) {
       console.error('Error loading screens:', error);
       setScreens([]);
@@ -63,8 +62,8 @@ const Dashboard = ({ apiKey, onLogout }) => {
 
   const loadScripts = async () => {
     try {
-      const response = await apiService.getScripts();
-      setScripts(response.data || []);
+      const scripts = await apiService.getTestScripts();
+      setScripts(scripts || []);
     } catch (error) {
       console.error('Error loading scripts:', error);
       setScripts([]);
@@ -73,8 +72,8 @@ const Dashboard = ({ apiKey, onLogout }) => {
 
   const loadTags = async () => {
     try {
-      const response = await apiService.getTags();
-      setTags(response.data || []);
+      const tags = await apiService.getTags();
+      setTags(tags || []);
     } catch (error) {
       console.error('Error loading tags:', error);
       setTags([]);

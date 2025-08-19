@@ -1,10 +1,13 @@
 import React, { useState } from 'react';
-import { Key, Chrome, Play } from 'lucide-react';
+import { Key, Chrome, Play, Settings } from 'lucide-react';
 import toast from 'react-hot-toast';
+import apiService from '../services/api';
 
 const LoginPage = ({ onLogin }) => {
   const [apiKey, setApiKey] = useState('');
+  const [apiUrl, setApiUrl] = useState('http://localhost:3001');
   const [isLoading, setIsLoading] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -14,16 +17,28 @@ const LoginPage = ({ onLogin }) => {
       return;
     }
 
+    if (!apiUrl.trim()) {
+      toast.error('Vui lòng nhập API URL');
+      return;
+    }
+
     setIsLoading(true);
 
     try {
-      // Simulate API key validation (in real app, validate with backend)
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Cập nhật cấu hình API
+      await apiService.updateConfig(apiUrl.trim(), apiKey.trim());
       
-      await onLogin(apiKey.trim());
-      toast.success('Đăng nhập thành công!');
+      // Validate API key với server
+      const validation = await apiService.validateApiKey(apiKey.trim());
+      
+      if (validation.isValid) {
+        await onLogin(apiKey.trim());
+        toast.success('Đăng nhập thành công!');
+      } else {
+        toast.error('API Key không hợp lệ');
+      }
     } catch (error) {
-      toast.error('Đăng nhập thất bại. Vui lòng kiểm tra lại API Key.');
+      toast.error('Đăng nhập thất bại. Vui lòng kiểm tra lại API Key và URL.');
       console.error('Login error:', error);
     } finally {
       setIsLoading(false);
@@ -53,7 +68,37 @@ const LoginPage = ({ onLogin }) => {
 
         {/* Form đăng nhập */}
         <div className="bg-gray-800 bg-opacity-90 backdrop-blur-sm rounded-xl shadow-2xl border border-gray-700 p-8">
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-xl font-semibold text-white">Đăng nhập</h2>
+            <button
+              type="button"
+              onClick={() => setShowSettings(!showSettings)}
+              className="p-2 text-gray-400 hover:text-white transition-colors"
+            >
+              <Settings className="w-5 h-5" />
+            </button>
+          </div>
+
           <form onSubmit={handleSubmit} className="space-y-6">
+            {showSettings && (
+              <div>
+                <label htmlFor="apiUrl" className="block text-sm font-medium text-gray-200 mb-2">
+                  API URL
+                </label>
+                <input
+                  id="apiUrl"
+                  name="apiUrl"
+                  type="url"
+                  required
+                  className="block w-full px-3 py-3 border border-gray-600 rounded-lg bg-gray-700 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                  placeholder="http://localhost:3001"
+                  value={apiUrl}
+                  onChange={(e) => setApiUrl(e.target.value)}
+                  disabled={isLoading}
+                />
+              </div>
+            )}
+
             <div>
               <label htmlFor="apiKey" className="block text-sm font-medium text-gray-200 mb-2">
                 API Key

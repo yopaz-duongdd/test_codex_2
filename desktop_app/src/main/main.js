@@ -3,9 +3,13 @@ const path = require('path');
 const isDev = process.env.NODE_ENV === 'development';
 const Store = require('electron-store');
 const log = require('electron-log');
+const TestExecutor = require('./testExecutor');
 
 // Khởi tạo store để lưu trữ dữ liệu local
 const store = new Store();
+
+// Khởi tạo test executor
+const testExecutor = new TestExecutor();
 
 let mainWindow;
 
@@ -90,6 +94,20 @@ ipcMain.handle('show-error-box', (event, title, content) => {
 
 ipcMain.handle('app-version', () => {
   return app.getVersion();
+});
+
+// API configuration handlers
+ipcMain.handle('get-api-config', () => {
+  return {
+    apiUrl: store.get('apiUrl', 'http://localhost:3001'),
+    apiKey: store.get('apiKey', '')
+  };
+});
+
+ipcMain.handle('set-api-config', (event, config) => {
+  store.set('apiUrl', config.apiUrl);
+  store.set('apiKey', config.apiKey);
+  return true;
 });
 
 // Log errors

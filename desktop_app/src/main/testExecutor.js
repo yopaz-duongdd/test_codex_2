@@ -3,6 +3,7 @@ const fs = require('fs').promises;
 const path = require('path');
 const { ipcMain } = require('electron');
 const log = require('electron-log');
+const axios = require('axios');
 
 class TestExecutor {
   constructor() {
@@ -10,6 +11,8 @@ class TestExecutor {
     this.page = null;
     this.isRunning = false;
     this.currentTestId = null;
+    this.apiUrl = 'http://localhost:3001';
+    this.apiKey = '';
     this.setupIPC();
   }
 
@@ -91,18 +94,16 @@ class TestExecutor {
   }
 
   async runSingleScript(scriptData, sender) {
-    const startTime = Date.now();
+    const startTime = new Date().toISOString();
     let result = {
-      scriptId: scriptData.id,
-      scriptName: scriptData.name,
+      testScriptId: scriptData.id,
       status: 'running',
       startTime,
       endTime: null,
-      duration: 0,
-      steps: [],
+      errorMessage: null,
       screenshots: [],
       consoleErrors: [],
-      finalUrl: null
+      steps: []
     };
 
     try {
@@ -127,8 +128,8 @@ class TestExecutor {
         });
       });
 
-      // Đọc và thực thi script file
-      const scriptContent = await this.loadScriptFile(scriptData.filePath);
+      // Thực thi script content trực tiếp
+      const scriptContent = scriptData.fileContent || await this.loadScriptFile(scriptData.fileName);
       
       // Parse script và extract các steps
       const steps = this.parseScriptSteps(scriptContent);
@@ -145,37 +146,74 @@ class TestExecutor {
           step: step
         });
 
-        const stepResult = await this.executeStep(step);
-        result.steps.push(stepResult);
+        const stepStartTime = new Date().toISOString();
+        
+        try {
+          await this.executeStep(step);
+          
+          // Thu thập dữ liệu sau mỗi step
+          const currentUrl = this.page.url();
+          const screenshot = await this.takeScreenshot(`${scriptData.name}_step_${i + 1}`);
+          
+          const stepResult = {
+            id: `step_${i + 1}`,
+            stepNumber: i + 1,
+            url: currentUrl,
+            screenshot: screenshot ? screenshot.filename : null,
+            consoleErrors: [...result.consoleErrors], // Copy current console errors
+            timestamp: stepStartTime
+          };
+          
+          result.steps.push(stepResult);
+          
+          if (screenshot) {
+            result.screenshots.push(screenshot.filename);
+          }
 
-        // Chụp screenshot sau mỗi step
-        const screenshot = await this.takeScreenshot(`${scriptData.name}_step_${i + 1}`);
-        result.screenshots.push(screenshot);
-
-        // Lấy URL hiện tại
-        result.finalUrl = this.page.url();
-
-        // Delay giữa các step
-        await new Promise(resolve => setTimeout(resolve, 1000));
+          // Delay giữa các step
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          
+        } catch (stepError) {
+          // Lỗi trong step, nhưng vẫn thu thập dữ liệu
+          const currentUrl = this.page ? this.page.url() : 'unknown';
+          const screenshot = await this.takeScreenshot(`${scriptData.name}_step_${i + 1}_error`);
+          
+          const stepResult = {
+            id: `step_${i + 1}`,
+            stepNumber: i + 1,
+            url: currentUrl,
+            screenshot: screenshot ? screenshot.filename : null,
+            consoleErrors: [...result.consoleErrors],
+            timestamp: stepStartTime,
+            error: stepError.message
+          };
+          
+          result.steps.push(stepResult);
+          
+          if (screenshot) {
+            result.screenshots.push(screenshot.filename);
+          }
+          
+          throw stepError; // Re-throw để dừng execution
+        }
       }
 
-      result.status = 'passed';
-      result.endTime = Date.now();
-      result.duration = result.endTime - startTime;
+      result.status = 'success';
+      result.endTime = new Date().toISOString();
 
     } catch (error) {
       log.error(`Script execution failed for ${scriptData.name}:`, error);
       
       result.status = 'failed';
-      result.error = error.message;
-      result.endTime = Date.now();
-      result.duration = result.endTime - startTime;
+      result.errorMessage = error.message;
+      result.endTime = new Date().toISOString();
       
       // Chụp screenshot khi lỗi
       try {
         const errorScreenshot = await this.takeScreenshot(`${scriptData.name}_error`);
-        result.screenshots.push(errorScreenshot);
-        result.finalUrl = this.page ? this.page.url() : null;
+        if (errorScreenshot) {
+          result.screenshots.push(errorScreenshot.filename);
+        }
       } catch (screenshotError) {
         log.error('Failed to take error screenshot:', screenshotError);
       }
@@ -184,6 +222,13 @@ class TestExecutor {
         await this.page.close();
         this.page = null;
       }
+    }
+
+    // Gửi kết quả về API server
+    try {
+      await this.sendResultToAPI(result);
+    } catch (apiError) {
+      log.error('Failed to send result to API:', apiError);
     }
 
     return result;
@@ -316,7 +361,8 @@ class TestExecutor {
 
     try {
       const timestamp = Date.now();
-      const screenshotPath = path.join(__dirname, '../../screenshots', `${filename}_${timestamp}.png`);
+      const screenshotFilename = `${filename}_${timestamp}.png`;
+      const screenshotPath = path.join(__dirname, '../../screenshots', screenshotFilename);
       
       // Tạo thư mục screenshots nếu chưa có
       const screenshotsDir = path.dirname(screenshotPath);
@@ -328,13 +374,42 @@ class TestExecutor {
       });
       
       return {
-        filename: path.basename(screenshotPath),
+        filename: screenshotFilename,
         path: screenshotPath,
         timestamp
       };
     } catch (error) {
       log.error('Screenshot error:', error);
       return null;
+    }
+  }
+
+  async sendResultToAPI(result) {
+    try {
+      const Store = require('electron-store');
+      const store = new Store();
+      
+      const apiUrl = store.get('apiUrl', 'http://localhost:3001');
+      const apiKey = store.get('apiKey', '');
+      
+      if (!apiKey) {
+        log.warn('No API key configured, skipping result upload');
+        return;
+      }
+
+      const response = await axios.post(`${apiUrl}/api/test-results`, result, {
+        headers: {
+          'Content-Type': 'application/json',
+          'X-API-Key': apiKey
+        },
+        timeout: 10000
+      });
+
+      log.info('Test result sent to API successfully:', response.data.id);
+      return response.data;
+    } catch (error) {
+      log.error('Failed to send result to API:', error.message);
+      throw error;
     }
   }
 

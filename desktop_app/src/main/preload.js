@@ -37,5 +37,11 @@ contextBridge.exposeInMainWorld('electronAPI', {
       ipcRenderer.on('test-error', callback);
       return () => ipcRenderer.removeListener('test-error', callback);
     }
+  },
+
+  // API configuration methods
+  api: {
+    getConfig: () => ipcRenderer.invoke('get-api-config'),
+    setConfig: (config) => ipcRenderer.invoke('set-api-config', config)
   }
 });

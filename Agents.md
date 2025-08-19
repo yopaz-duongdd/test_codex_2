@@ -1,1 +1,1 @@
-Khi tiến hành login chưa gọi qua api và api key cũng chưa lưu vào db. APi key ở trên menu cũng chưa được lấy từ db, hãy sửa lại.
+Tham chiếu tới folder desktop_app, cải tiến app Electron trong folder desktop_app, tham chiếu tới mô tả trong requirements.md
